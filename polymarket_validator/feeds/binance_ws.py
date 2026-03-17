@@ -63,7 +63,11 @@ class BinanceFeed:
                         if not self._running:
                             break
                         await self._handle_message(raw)
-            except (websockets.ConnectionClosed, OSError, asyncio.CancelledError) as e:
+            except asyncio.CancelledError:
+                # Always exit on cancel - never reconnect
+                log.info("Binance feed cancelled")
+                return
+            except (websockets.ConnectionClosed, OSError) as e:
                 if not self._running:
                     break
                 retry += 1
@@ -71,13 +75,20 @@ class BinanceFeed:
                     retry = config.MAX_RETRIES
                 wait = config.RETRY_BACKOFF_BASE ** retry
                 log.warning("Binance WS disconnected (%s), reconnecting in %ss", e, wait)
-                await asyncio.sleep(wait)
+                try:
+                    await asyncio.sleep(wait)
+                except asyncio.CancelledError:
+                    log.info("Binance feed cancelled during reconnect")
+                    return
 
     async def stop(self):
         """Gracefully close the WebSocket."""
         self._running = False
         if self._ws:
-            await self._ws.close()
+            try:
+                await self._ws.close()
+            except Exception:
+                pass
 
     async def _handle_message(self, raw: str):
         data = json.loads(raw)
@@ -144,8 +155,16 @@ class BinanceFeed:
             lo_1m = min(t.price for t in last_1m_trades)
             rng = h - lo_1m
             candle_body_ratio = abs(c - o) / rng if rng else 0.0
+            candle_body_signed = (c - o) / rng if rng else 0.0   # NEW: +1 bullish, -1 bearish
         else:
             candle_body_ratio = 0.0
+            candle_body_signed = 0.0
+
+        # --- Volume ratio: last 30s volume vs avg 30s volume over last 5m ---
+        vol_30s = sum(t.qty for t in trades if t.timestamp >= now - 30)
+        vol_5m_total = sum(t.qty for t in five_min_trades)
+        vol_avg_30s = vol_5m_total / 10.0  # 10 × 30s periods in 5m
+        vol_ratio = vol_30s / vol_avg_30s if vol_avg_30s > 0 else 1.0
 
         return {
             "last_price": last_price,
@@ -157,6 +176,8 @@ class BinanceFeed:
             "atr_5m": atr_5m,
             "trade_flow_imbalance": trade_flow_imbalance,
             "candle_body_ratio": candle_body_ratio,
+            "candle_body_signed": candle_body_signed,
+            "vol_ratio": vol_ratio,
         }
 
     @staticmethod
@@ -210,4 +231,6 @@ class BinanceFeed:
             "atr_5m": 0.0,
             "trade_flow_imbalance": 0.0,
             "candle_body_ratio": 0.0,
+            "candle_body_signed": 0.0,
+            "vol_ratio": 1.0,
         }

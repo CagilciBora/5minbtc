@@ -51,6 +51,8 @@ def build_features(
         "atr_5m": binance_snapshot["atr_5m"],
         "trade_flow_imbalance": binance_snapshot["trade_flow_imbalance"],
         "candle_body_ratio": binance_snapshot["candle_body_ratio"],
+        "candle_body_signed": binance_snapshot.get("candle_body_signed", 0.0),
+        "vol_ratio": binance_snapshot.get("vol_ratio", 1.0),
         "poly_mid": poly_mid,
         "poly_spread": poly_spread,
         "binance_price": btc_price,
