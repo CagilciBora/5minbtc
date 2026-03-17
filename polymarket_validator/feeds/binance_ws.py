@@ -63,7 +63,11 @@ class BinanceFeed:
                         if not self._running:
                             break
                         await self._handle_message(raw)
-            except (websockets.ConnectionClosed, OSError, asyncio.CancelledError) as e:
+            except asyncio.CancelledError:
+                # Always exit on cancel - never reconnect
+                log.info("Binance feed cancelled")
+                return
+            except (websockets.ConnectionClosed, OSError) as e:
                 if not self._running:
                     break
                 retry += 1
@@ -71,13 +75,20 @@ class BinanceFeed:
                     retry = config.MAX_RETRIES
                 wait = config.RETRY_BACKOFF_BASE ** retry
                 log.warning("Binance WS disconnected (%s), reconnecting in %ss", e, wait)
-                await asyncio.sleep(wait)
+                try:
+                    await asyncio.sleep(wait)
+                except asyncio.CancelledError:
+                    log.info("Binance feed cancelled during reconnect")
+                    return
 
     async def stop(self):
         """Gracefully close the WebSocket."""
         self._running = False
         if self._ws:
-            await self._ws.close()
+            try:
+                await self._ws.close()
+            except Exception:
+                pass
 
     async def _handle_message(self, raw: str):
         data = json.loads(raw)

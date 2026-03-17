@@ -1,7 +1,9 @@
 """Entry point: runs all async tasks for the Polymarket BTC validator."""
 
 import asyncio
+import os
 import signal
+import sys
 
 import aiohttp
 
@@ -16,7 +18,7 @@ from polymarket_validator.utils.logger import get_logger, setup_logging
 
 log = get_logger("main")
 
-WEB_PORT = 8080
+WEB_PORT = int(os.environ.get("VALIDATOR_WEB_PORT", "8080"))
 
 
 async def main():
@@ -30,7 +32,10 @@ async def main():
 
     await db.connect()
 
-    session = aiohttp.ClientSession()
+    # Disable Brotli by explicitly setting Accept-Encoding to gzip/deflate only
+    session = aiohttp.ClientSession(
+        headers={"Accept-Encoding": "gzip, deflate"}
+    )
 
     # Create tasks
     tasks = []
@@ -56,11 +61,18 @@ async def main():
     )
     tasks.append(web_task)
 
-    # Graceful shutdown
+    # --- Graceful shutdown ---
     shutdown_event = asyncio.Event()
+    _shutdown_called = False
 
     def _signal_handler():
-        log.info("Shutdown signal received")
+        nonlocal _shutdown_called
+        if _shutdown_called:
+            # Second Ctrl-C: force exit immediately
+            log.info("Force exit (second signal)")
+            os._exit(1)
+        _shutdown_called = True
+        log.info("Shutdown signal received (press Ctrl-C again to force)")
         shutdown_event.set()
 
     loop = asyncio.get_running_loop()
@@ -68,29 +80,37 @@ async def main():
         try:
             loop.add_signal_handler(sig, _signal_handler)
         except NotImplementedError:
-            # Windows doesn't support add_signal_handler
             pass
 
     try:
         await shutdown_event.wait()
     except KeyboardInterrupt:
-        log.info("KeyboardInterrupt received")
+        pass
 
-    # Cleanup
+    # Cleanup: stop feed first so WS doesn't reconnect
     log.info("Shutting down...")
+    await feed.stop()
+
+    # Cancel all tasks
     for t in tasks:
         t.cancel()
 
-    await asyncio.gather(*tasks, return_exceptions=True)
-    await feed.stop()
+    # Wait with a timeout so we don't hang forever
+    done, pending = await asyncio.wait(tasks, timeout=5)
+    for t in pending:
+        log.warning("Task %s did not finish in time, forcing cancel", t.get_name())
+        t.cancel()
+
     await session.close()
 
     # Print final stats
-    resolved = await db.get_resolved()
-    if resolved:
-        from polymarket_validator.tasks.stats import _compute_stats
-
-        log.info("Final stats:%s", _compute_stats(resolved))
+    try:
+        resolved = await db.get_resolved()
+        if resolved:
+            from polymarket_validator.tasks.stats import _compute_stats
+            log.info("Final stats:%s", _compute_stats(resolved))
+    except Exception:
+        pass
 
     await db.close()
     log.info("Shutdown complete")
@@ -100,6 +120,8 @@ def run():
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
+        pass
+    except SystemExit:
         pass
 
 
