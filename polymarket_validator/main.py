@@ -49,7 +49,7 @@ async def main():
     tasks.append(watcher_task)
 
     resolver_task = asyncio.create_task(
-        run_resolver(db, session), name="resolver"
+        run_resolver(db, session, predictor), name="resolver"
     )
     tasks.append(resolver_task)
 

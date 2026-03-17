@@ -155,8 +155,16 @@ class BinanceFeed:
             lo_1m = min(t.price for t in last_1m_trades)
             rng = h - lo_1m
             candle_body_ratio = abs(c - o) / rng if rng else 0.0
+            candle_body_signed = (c - o) / rng if rng else 0.0   # NEW: +1 bullish, -1 bearish
         else:
             candle_body_ratio = 0.0
+            candle_body_signed = 0.0
+
+        # --- Volume ratio: last 30s volume vs avg 30s volume over last 5m ---
+        vol_30s = sum(t.qty for t in trades if t.timestamp >= now - 30)
+        vol_5m_total = sum(t.qty for t in five_min_trades)
+        vol_avg_30s = vol_5m_total / 10.0  # 10 × 30s periods in 5m
+        vol_ratio = vol_30s / vol_avg_30s if vol_avg_30s > 0 else 1.0
 
         return {
             "last_price": last_price,
@@ -168,6 +176,8 @@ class BinanceFeed:
             "atr_5m": atr_5m,
             "trade_flow_imbalance": trade_flow_imbalance,
             "candle_body_ratio": candle_body_ratio,
+            "candle_body_signed": candle_body_signed,
+            "vol_ratio": vol_ratio,
         }
 
     @staticmethod
@@ -221,4 +231,6 @@ class BinanceFeed:
             "atr_5m": 0.0,
             "trade_flow_imbalance": 0.0,
             "candle_body_ratio": 0.0,
+            "candle_body_signed": 0.0,
+            "vol_ratio": 1.0,
         }

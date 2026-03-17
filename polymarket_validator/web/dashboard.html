@@ -3,763 +3,650 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BTC 5-Min Validator Dashboard</title>
+<title>BTC 5-Min Validator</title>
 <style>
   :root {
-    --bg: #0d1117;
-    --surface: #161b22;
-    --surface2: #1c2333;
-    --border: #30363d;
-    --text: #e6edf3;
-    --text2: #8b949e;
-    --green: #3fb950;
-    --red: #f85149;
-    --orange: #d29922;
-    --blue: #58a6ff;
-    --purple: #bc8cff;
-    --chart-line: #f0883e;
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --surface3: #202c42;
+    --border: #263348;
+    --text: #e2e8f0;
+    --text2: #7a8fa6;
+    --green: #22d3a0;
+    --red: #f4566e;
+    --orange: #f59e0b;
+    --blue: #60a5fa;
+    --purple: #a78bfa;
+    --chart: #f0883e;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height:100vh; }
+  .container { max-width:1500px; margin:0 auto; padding:14px; }
 
-  .container { max-width: 1400px; margin: 0 auto; padding: 16px; }
-
-  /* --- Header --- */
+  /* ── HEADER ── */
   .header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px; background: var(--surface); border-radius: 12px;
-    border: 1px solid var(--border); margin-bottom: 16px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px 20px; background:var(--surface); border-radius:14px;
+    border:1px solid var(--border); margin-bottom:12px; gap:16px; flex-wrap:wrap;
   }
-  .header-left { display: flex; align-items: center; gap: 24px; }
+  .header-brand { display:flex; align-items:center; gap:14px; }
   .btc-icon {
-    width: 52px; height: 52px; border-radius: 12px;
-    background: linear-gradient(135deg, #f7931a 0%, #e8850f 100%);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 28px; font-weight: 700; color: #fff;
+    width:48px; height:48px; border-radius:12px;
+    background:linear-gradient(135deg,#f7931a,#e8850f);
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px; font-weight:800; color:#fff; flex-shrink:0;
   }
-  .header-title h1 { font-size: 20px; font-weight: 600; }
-  .header-title p { font-size: 13px; color: var(--text2); margin-top: 2px; }
-  .price-section { display: flex; align-items: baseline; gap: 32px; }
-  .price-block { text-align: center; }
-  .price-block .label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
-  .price-block .value { font-size: 28px; font-weight: 700; margin-top: 2px; }
-  .price-block .value.green { color: var(--green); }
-  .price-block .value.red { color: var(--red); }
-  .price-change { font-size: 13px; margin-top: 2px; }
-  .countdown {
-    text-align: center; padding: 8px 16px;
-    background: rgba(248, 81, 73, 0.1); border-radius: 8px;
-  }
-  .countdown .digits { font-size: 36px; font-weight: 700; color: var(--red); font-variant-numeric: tabular-nums; }
-  .countdown .sub { font-size: 10px; color: var(--text2); display: flex; gap: 18px; justify-content: center; }
+  .brand-title h1 { font-size:18px; font-weight:700; }
+  .brand-title p { font-size:12px; color:var(--text2); margin-top:1px; }
 
-  /* --- Status bar --- */
-  .status-bar {
-    display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;
-  }
-  .status-pill {
-    padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
-    display: flex; align-items: center; gap: 6px;
-    background: var(--surface); border: 1px solid var(--border);
-  }
-  .status-dot { width: 8px; height: 8px; border-radius: 50%; }
-  .status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .status-dot.orange { background: var(--orange); box-shadow: 0 0 6px var(--orange); }
-  .status-dot.red { background: var(--red); }
-  .warmup-bar {
-    width: 80px; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;
-  }
-  .warmup-bar-fill { height: 100%; background: var(--orange); border-radius: 3px; transition: width 1s; }
+  .header-metrics { display:flex; gap:20px; align-items:center; flex-wrap:wrap; }
+  .hmetric { text-align:center; }
+  .hmetric .hl { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.6px; }
+  .hmetric .hv { font-size:24px; font-weight:800; margin-top:2px; font-variant-numeric:tabular-nums; }
+  .hmetric .hc { font-size:12px; margin-top:1px; }
+  .hdivider { width:1px; height:40px; background:var(--border); }
 
-  /* --- Grid --- */
-  .grid { display: grid; grid-template-columns: 1fr 360px; gap: 16px; }
+  .bankroll-block { padding:10px 16px; border-radius:10px; border:1px solid var(--border); background:var(--surface2); }
+  .bankroll-label { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.6px; }
+  .bankroll-val { font-size:26px; font-weight:800; color:var(--green); margin-top:2px; font-variant-numeric:tabular-nums; }
+  .bankroll-pnl { font-size:12px; margin-top:2px; }
 
-  /* --- Chart --- */
-  .chart-panel {
-    background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
-    padding: 16px; position: relative;
+  /* ── STATUS BAR ── */
+  .status-bar { display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap; align-items:center; }
+  .pill {
+    padding:5px 12px; border-radius:20px; font-size:12px; font-weight:500;
+    display:flex; align-items:center; gap:6px;
+    background:var(--surface); border:1px solid var(--border);
   }
-  .chart-panel h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text2); }
-  #priceChart { width: 100%; height: 300px; border-radius: 8px; }
+  .dot { width:7px; height:7px; border-radius:50%; }
+  .dot.green { background:var(--green); box-shadow:0 0 6px var(--green); }
+  .dot.orange { background:var(--orange); box-shadow:0 0 4px var(--orange); }
+  .dot.red { background:var(--red); }
+  .warmup-bar { width:70px; height:5px; background:var(--border); border-radius:3px; overflow:hidden; }
+  .warmup-fill { height:100%; background:var(--orange); border-radius:3px; transition:width 1s; }
 
-  /* --- Right sidebar --- */
-  .sidebar { display: flex; flex-direction: column; gap: 16px; }
+  /* ── MAIN GRID ── */
+  .grid { display:grid; grid-template-columns:1fr 380px; gap:12px; }
 
-  /* --- Prediction card --- */
-  .pred-card {
-    background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
-    padding: 20px;
-  }
-  .pred-card h2 { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 14px; }
-  .pred-label {
-    font-size: 42px; font-weight: 800; text-align: center; padding: 12px;
-    border-radius: 8px; margin-bottom: 14px;
-  }
-  .pred-label.UP { color: var(--green); background: rgba(63,185,80,0.1); }
-  .pred-label.DOWN { color: var(--red); background: rgba(248,81,73,0.1); }
-  .pred-label.SKIP { color: var(--text2); background: rgba(139,148,158,0.1); }
-  .pred-label.WAITING { color: var(--orange); background: rgba(210,153,34,0.1); font-size: 24px; }
-  .pred-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .metric {
-    padding: 10px; background: var(--surface2); border-radius: 8px; text-align: center;
-  }
-  .metric .mlabel { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.5px; }
-  .metric .mval { font-size: 20px; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
-  .edge-bar-container {
-    margin-top: 12px; padding: 10px; background: var(--surface2); border-radius: 8px;
-  }
-  .edge-bar-label { font-size: 10px; color: var(--text2); text-transform: uppercase; margin-bottom: 6px; text-align: center; }
-  .edge-bar {
-    height: 8px; background: var(--border); border-radius: 4px; position: relative; overflow: visible;
-  }
-  .edge-bar-center { position: absolute; left: 50%; top: -2px; width: 2px; height: 12px; background: var(--text2); }
-  .edge-bar-fill {
-    position: absolute; top: 0; height: 100%; border-radius: 4px; transition: all 0.3s;
-  }
+  /* ── CHART ── */
+  .chart-card { background:var(--surface); border-radius:14px; border:1px solid var(--border); padding:16px; }
+  .card-title { font-size:13px; font-weight:600; color:var(--text2); margin-bottom:12px; }
+  #priceChart { width:100%; height:280px; }
 
-  /* --- Features panel --- */
-  .features-panel {
-    background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
-    padding: 16px;
-  }
-  .features-panel h2 { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 10px; }
-  .feature-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 12px;
-  }
-  .feature-row:last-child { border-bottom: none; }
-  .feature-name { color: var(--text2); }
-  .feature-val { font-weight: 600; font-variant-numeric: tabular-nums; }
-  .feature-val.pos { color: var(--green); }
-  .feature-val.neg { color: var(--red); }
+  /* ── STATS ── */
+  .stats-card { background:var(--surface); border-radius:14px; border:1px solid var(--border); padding:16px; margin-top:12px; }
+  .stat-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .stat-box { padding:10px; background:var(--surface2); border-radius:10px; text-align:center; }
+  .stat-box .sl { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.5px; }
+  .stat-box .sv { font-size:20px; font-weight:700; margin-top:4px; font-variant-numeric:tabular-nums; }
+  .stat-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .stat-row:last-child { border-bottom:none; }
+  .sr-label { color:var(--text2); }
+  .sr-val { font-weight:600; }
 
-  /* --- Stats panel --- */
-  .stats-panel {
-    background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
-    padding: 16px;
-  }
-  .stats-panel h2 { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 12px; }
-  .stat-row {
-    display: flex; justify-content: space-between; padding: 8px 0;
-    border-bottom: 1px solid var(--border); font-size: 13px;
-  }
-  .stat-row:last-child { border-bottom: none; }
-  .stat-label { color: var(--text2); }
-  .stat-val { font-weight: 600; font-variant-numeric: tabular-nums; }
+  /* ── SIDEBAR ── */
+  .sidebar { display:flex; flex-direction:column; gap:12px; }
 
-  /* --- Prediction history --- */
-  .history-panel {
-    background: var(--surface); border-radius: 12px; border: 1px solid var(--border);
-    padding: 16px; grid-column: 1 / -1;
-  }
-  .history-panel h2 { font-size: 14px; font-weight: 600; color: var(--text2); margin-bottom: 12px; }
-  .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .history-table th {
-    text-align: left; padding: 8px 10px; color: var(--text2); font-weight: 500;
-    border-bottom: 2px solid var(--border); font-size: 11px; text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .history-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
-  .history-table tr:hover td { background: var(--surface2); }
-  .badge {
-    display: inline-block; padding: 2px 8px; border-radius: 4px;
-    font-size: 11px; font-weight: 600;
-  }
-  .badge.UP { background: rgba(63,185,80,0.15); color: var(--green); }
-  .badge.DOWN { background: rgba(248,81,73,0.15); color: var(--red); }
-  .badge.SKIP { background: rgba(139,148,158,0.15); color: var(--text2); }
-  .outcome-icon { font-size: 16px; }
-  .outcome-icon.correct { color: var(--green); }
-  .outcome-icon.wrong { color: var(--red); }
-  .outcome-icon.pending { color: var(--orange); }
+  /* ── PREDICTION CARD ── */
+  .pred-card { background:var(--surface); border-radius:14px; border:1px solid var(--border); padding:18px; }
+  .pred-card .card-title { margin-bottom:10px; }
 
-  /* --- RSI gauge --- */
-  .rsi-gauge { margin-top: 10px; padding: 10px; background: var(--surface2); border-radius: 8px; }
-  .rsi-gauge .label { font-size: 10px; color: var(--text2); text-transform: uppercase; text-align: center; margin-bottom: 6px; }
-  .rsi-track { height: 8px; background: linear-gradient(to right, var(--green), var(--orange), var(--red)); border-radius: 4px; position: relative; }
-  .rsi-needle {
-    position: absolute; top: -4px; width: 4px; height: 16px;
-    background: #fff; border-radius: 2px; transition: left 0.5s;
+  .pred-label-wrap {
+    text-align:center; padding:14px 10px; border-radius:10px; margin-bottom:14px; position:relative;
   }
-  .rsi-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--text2); margin-top: 4px; }
+  .pred-label-wrap.UP    { background:rgba(34,211,160,.1); border:1px solid rgba(34,211,160,.25); }
+  .pred-label-wrap.DOWN  { background:rgba(244,86,110,.1); border:1px solid rgba(244,86,110,.25); }
+  .pred-label-wrap.SKIP  { background:rgba(122,143,166,.08); border:1px solid var(--border); }
+  .pred-label-wrap.WAITING { background:rgba(245,158,11,.08); border:1px solid rgba(245,158,11,.25); }
 
-  @media (max-width: 900px) {
-    .grid { grid-template-columns: 1fr; }
-    .header { flex-direction: column; gap: 12px; }
-    .price-section { flex-direction: column; gap: 12px; }
+  .pred-dir { font-size:36px; font-weight:900; letter-spacing:1px; }
+  .pred-dir.UP    { color:var(--green); }
+  .pred-dir.DOWN  { color:var(--red); }
+  .pred-dir.SKIP  { color:var(--text2); }
+  .pred-dir.WAITING { color:var(--orange); font-size:22px; }
+
+  .pred-conf { font-size:13px; margin-top:4px; color:var(--text2); }
+  .pred-conf span { font-size:22px; font-weight:800; }
+  .pred-conf span.UP    { color:var(--green); }
+  .pred-conf span.DOWN  { color:var(--red); }
+
+  .pred-meta { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; }
+  .pm-box { padding:9px; background:var(--surface2); border-radius:8px; text-align:center; }
+  .pm-box .pm-l { font-size:10px; color:var(--text2); text-transform:uppercase; letter-spacing:.4px; }
+  .pm-box .pm-v { font-size:16px; font-weight:700; margin-top:3px; font-variant-numeric:tabular-nums; }
+
+  .bet-strip {
+    display:flex; gap:8px; align-items:center; justify-content:center;
+    padding:10px; background:var(--surface2); border-radius:8px; font-size:13px;
+  }
+  .bet-amount { font-size:18px; font-weight:800; color:var(--blue); }
+
+  .edge-bar-wrap { margin-top:10px; padding:10px; background:var(--surface2); border-radius:8px; }
+  .edge-bar-label { font-size:10px; color:var(--text2); text-transform:uppercase; margin-bottom:5px; text-align:center; }
+  .edge-bar { height:7px; background:var(--border); border-radius:4px; position:relative; overflow:visible; }
+  .edge-bar-ctr { position:absolute; left:50%; top:-3px; width:1px; height:13px; background:var(--text2); }
+  .edge-bar-fill { position:absolute; top:0; height:100%; border-radius:4px; transition:all .3s; }
+
+  /* ── INDICATORS ── */
+  .indic-card { background:var(--surface); border-radius:14px; border:1px solid var(--border); padding:16px; }
+  .rsi-wrap { padding:10px; background:var(--surface2); border-radius:8px; margin-bottom:10px; }
+  .rsi-label-row { display:flex; justify-content:space-between; font-size:10px; color:var(--text2); margin-bottom:5px; }
+  .rsi-track { height:8px; background:linear-gradient(to right,var(--green),var(--orange),var(--red)); border-radius:4px; position:relative; }
+  .rsi-needle { position:absolute; top:-4px; width:4px; height:16px; background:#fff; border-radius:2px; transition:left .5s; transform:translateX(-50%); }
+
+  .mini-row { display:flex; gap:8px; margin-top:8px; }
+  .mini-box { flex:1; padding:8px; background:var(--surface2); border-radius:8px; text-align:center; }
+  .mini-box .ml { font-size:10px; color:var(--text2); }
+  .mini-box .mv { font-size:13px; font-weight:700; margin-top:2px; }
+
+  .flow-bar-wrap { margin-top:8px; padding:8px; background:var(--surface2); border-radius:8px; }
+  .flow-bar-label { font-size:10px; color:var(--text2); margin-bottom:4px; display:flex; justify-content:space-between; }
+  .flow-bar { height:6px; background:var(--border); border-radius:3px; position:relative; }
+  .flow-bar-ctr { position:absolute; left:50%; top:-1px; width:1px; height:8px; background:var(--text2); }
+  .flow-bar-fill { position:absolute; top:0; height:100%; border-radius:3px; }
+
+  /* ── HISTORY ── */
+  .history-card { background:var(--surface); border-radius:14px; border:1px solid var(--border); padding:16px; grid-column:1/-1; margin-top:4px; }
+  .history-scroll { max-height:320px; overflow-y:auto; }
+  .htable { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .htable th {
+    text-align:left; padding:7px 10px; color:var(--text2); font-weight:500;
+    border-bottom:2px solid var(--border); font-size:10.5px; text-transform:uppercase; letter-spacing:.5px;
+    position:sticky; top:0; background:var(--surface); z-index:1;
+  }
+  .htable td { padding:7px 10px; border-bottom:1px solid var(--border); font-variant-numeric:tabular-nums; }
+  .htable tr:hover td { background:var(--surface2); }
+  .badge { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; }
+  .badge.UP   { background:rgba(34,211,160,.15); color:var(--green); }
+  .badge.DOWN { background:rgba(244,86,110,.15); color:var(--red); }
+  .badge.SKIP { background:rgba(122,143,166,.1); color:var(--text2); }
+  .oi.ok  { color:var(--green); font-size:15px; }
+  .oi.bad { color:var(--red); font-size:15px; }
+  .oi.pend { color:var(--orange); font-size:13px; }
+
+  @media(max-width:960px){
+    .grid{grid-template-columns:1fr;}
+    .header{flex-direction:column;gap:10px;}
+    .history-card{grid-column:1;}
   }
 </style>
 </head>
 <body>
 <div class="container">
-  <!-- Header -->
+
+  <!-- ── HEADER ── -->
   <div class="header">
-    <div class="header-left">
+    <div class="header-brand">
       <div class="btc-icon">&#8383;</div>
-      <div class="header-title">
-        <h1>Bitcoin Up or Down - 5 Minutes</h1>
-        <p id="marketQuestion">Polymarket BTC Validator Dashboard</p>
+      <div class="brand-title">
+        <h1>Bitcoin Up or Down — 5 Minutes</h1>
+        <p id="mktQuestion">Polymarket BTC Validator &bull; Half-Kelly Simulation</p>
       </div>
     </div>
-    <div class="price-section">
-      <div class="price-block">
-        <div class="label">Current BTC Price</div>
-        <div class="value green" id="currentPrice">--</div>
-        <div class="price-change" id="priceChange"></div>
+    <div class="header-metrics">
+      <div class="hmetric">
+        <div class="hl">BTC Price</div>
+        <div class="hv" id="currentPrice">--</div>
+        <div class="hc" id="priceChange"></div>
       </div>
-      <div class="countdown">
-        <div class="digits" id="countdown">--:--</div>
-        <div class="sub"><span>MINS</span><span>SECS</span></div>
+      <div class="hdivider"></div>
+      <div class="bankroll-block">
+        <div class="bankroll-label">Bankroll</div>
+        <div class="bankroll-val" id="bankrollVal">$1,000.00</div>
+        <div class="bankroll-pnl" id="bankrollPnl"></div>
       </div>
     </div>
   </div>
 
-  <!-- Status bar -->
+  <!-- ── STATUS BAR ── -->
   <div class="status-bar">
-    <div class="status-pill">
-      <div class="status-dot" id="wsDot"></div>
-      <span id="wsStatus">Connecting...</span>
-    </div>
-    <div class="status-pill">
-      <div class="status-dot" id="feedDot"></div>
+    <div class="pill"><div class="dot" id="wsDot"></div><span id="wsStatus">Connecting…</span></div>
+    <div class="pill">
+      <div class="dot" id="feedDot"></div>
       <span id="feedStatus">Feed: waiting</span>
-      <div class="warmup-bar"><div class="warmup-bar-fill" id="warmupFill"></div></div>
+      <div class="warmup-bar"><div class="warmup-fill" id="warmupFill"></div></div>
     </div>
-    <div class="status-pill">
-      <div class="status-dot green" id="marketsDot"></div>
-      <span id="marketsStatus">Markets: 0</span>
-    </div>
-    <div class="status-pill" id="predCountPill">
-      Predictions: <strong id="predCount">0</strong>
-    </div>
+    <div class="pill"><div class="dot green"></div><span id="marketsStatus">Markets: 0</span></div>
+    <div class="pill">Predictions: <strong id="predCount">0</strong></div>
+    <div class="pill">Model updates: <strong id="modelUpdates">0</strong></div>
   </div>
 
-  <!-- Main grid -->
+  <!-- ── MAIN GRID ── -->
   <div class="grid">
-    <!-- Left: Chart -->
+
+    <!-- LEFT COLUMN -->
     <div>
-      <div class="chart-panel">
-        <h2>BTC/USDT Live Price (Last 5 Minutes)</h2>
+      <!-- Chart -->
+      <div class="chart-card">
+        <div class="card-title">BTC/USDT Live Price (Last 5 Minutes)</div>
         <canvas id="priceChart"></canvas>
       </div>
 
-      <!-- Stats below chart -->
-      <div class="stats-panel" style="margin-top:16px;" id="statsPanel">
-        <h2>Performance Stats</h2>
+      <!-- Stats -->
+      <div class="stats-card">
+        <div class="card-title">Performance Stats</div>
         <div id="statsContent">
-          <div style="text-align:center;color:var(--text2);padding:20px;font-size:13px;">
-            Waiting for 10+ resolved predictions...
+          <div style="text-align:center;color:var(--text2);padding:16px;font-size:13px;">
+            Waiting for resolved predictions…
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Right sidebar -->
+    <!-- RIGHT SIDEBAR -->
     <div class="sidebar">
-      <!-- Current prediction -->
+
+      <!-- Prediction card -->
       <div class="pred-card">
-        <h2>Current Prediction</h2>
-        <div class="pred-label WAITING" id="predLabel">WAITING</div>
-        <div class="pred-metrics">
-          <div class="metric">
-            <div class="mlabel">Model P(UP)</div>
-            <div class="mval" id="pHat">--</div>
+        <div class="card-title">Current Prediction</div>
+
+        <div class="pred-label-wrap WAITING" id="predWrap">
+          <div class="pred-dir WAITING" id="predDir">WAITING</div>
+          <div class="pred-conf" id="predConf"></div>
+        </div>
+
+        <div class="pred-meta">
+          <div class="pm-box">
+            <div class="pm-l">P(model)</div>
+            <div class="pm-v" id="pHat">--</div>
           </div>
-          <div class="metric">
-            <div class="mlabel">Market P(UP)</div>
-            <div class="mval" id="pMarket">--</div>
+          <div class="pm-box">
+            <div class="pm-l">P(market)</div>
+            <div class="pm-v" id="pMarket">--</div>
           </div>
-          <div class="metric">
-            <div class="mlabel">BTC Price</div>
-            <div class="mval" id="predPrice">--</div>
+          <div class="pm-box">
+            <div class="pm-l">BTC Price</div>
+            <div class="pm-v" id="predPrice">--</div>
           </div>
-          <div class="metric">
-            <div class="mlabel">Time Left</div>
-            <div class="mval" id="predTime">--</div>
+          <div class="pm-box">
+            <div class="pm-l">Time Left</div>
+            <div class="pm-v" id="predTime">--</div>
           </div>
         </div>
-        <div class="edge-bar-container">
-          <div class="edge-bar-label">Edge (P_hat - P_market)</div>
+
+        <div class="bet-strip">
+          <span style="color:var(--text2);">Bet:</span>
+          <span class="bet-amount" id="betAmount">$0.00</span>
+          <span style="color:var(--text2);" id="kellyPct"></span>
+        </div>
+
+        <div class="edge-bar-wrap">
+          <div class="edge-bar-label">Edge (P_model − P_market)</div>
           <div class="edge-bar">
-            <div class="edge-bar-center"></div>
-            <div class="edge-bar-fill" id="edgeBarFill"></div>
+            <div class="edge-bar-ctr"></div>
+            <div class="edge-bar-fill" id="edgeFill"></div>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-top:4px;">
-            <span>-0.50</span><span>0</span><span>+0.50</span>
+            <span>−0.50</span><span>0</span><span>+0.50</span>
           </div>
         </div>
       </div>
 
-      <!-- RSI gauge -->
-      <div class="pred-card">
-        <h2>Key Indicators</h2>
-        <div class="rsi-gauge">
-          <div class="label">RSI (14)</div>
-          <div class="rsi-track">
-            <div class="rsi-needle" id="rsiNeedle" style="left:50%"></div>
-          </div>
-          <div class="rsi-labels"><span>Oversold 30</span><span>50</span><span>Overbought 70</span></div>
-        </div>
-        <div id="featuresMini" style="margin-top:12px;"></div>
-      </div>
-
-      <!-- Features detail -->
-      <div class="features-panel" id="featuresPanel">
-        <h2>Feature Snapshot</h2>
-        <div id="featuresContent">
-          <div style="color:var(--text2);font-size:12px;text-align:center;padding:10px;">
-            No prediction yet
+      <!-- Indicators -->
+      <div class="indic-card">
+        <div class="card-title">Key Indicators</div>
+        <div class="rsi-wrap">
+          <div class="rsi-label-row"><span>RSI (14)</span><span id="rsiVal">50</span></div>
+          <div class="rsi-track"><div class="rsi-needle" id="rsiNeedle" style="left:50%"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text2);margin-top:3px;">
+            <span>Oversold 30</span><span>50</span><span>Overbought 70</span>
           </div>
         </div>
+        <div class="flow-bar-wrap">
+          <div class="flow-bar-label">
+            <span>Trade Flow Imbalance</span>
+            <span id="flowVal">0.0%</span>
+          </div>
+          <div class="flow-bar">
+            <div class="flow-bar-ctr"></div>
+            <div class="flow-bar-fill" id="flowFill"></div>
+          </div>
+        </div>
+        <div class="mini-row">
+          <div class="mini-box">
+            <div class="ml">30s Return</div>
+            <div class="mv" id="ret30">0.000%</div>
+          </div>
+          <div class="mini-box">
+            <div class="ml">1m Return</div>
+            <div class="mv" id="ret1m">0.000%</div>
+          </div>
+          <div class="mini-box">
+            <div class="ml">Vol Ratio</div>
+            <div class="mv" id="volRatio">1.00×</div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- Prediction history table -->
-    <div class="history-panel">
-      <h2>Prediction History</h2>
-      <div style="max-height:300px;overflow-y:auto;">
-        <table class="history-table">
+    </div><!-- /sidebar -->
+
+    <!-- ── PREDICTION HISTORY ── -->
+    <div class="history-card">
+      <div class="card-title">Prediction History</div>
+      <div class="history-scroll">
+        <table class="htable">
           <thead>
             <tr>
               <th>Time</th>
-              <th>Market</th>
               <th>Label</th>
-              <th>P(hat)</th>
+              <th>Confidence</th>
+              <th>P(model)</th>
               <th>P(market)</th>
               <th>Edge</th>
               <th>BTC Price</th>
-              <th>Outcome</th>
+              <th>Bet</th>
+              <th>P&amp;L</th>
+              <th>Result</th>
             </tr>
           </thead>
-          <tbody id="historyBody">
-            <tr><td colspan="8" style="text-align:center;color:var(--text2);">No predictions yet</td></tr>
+          <tbody id="histBody">
+            <tr><td colspan="10" style="text-align:center;color:var(--text2);padding:20px;">No predictions yet</td></tr>
           </tbody>
         </table>
       </div>
     </div>
-  </div>
-</div>
+
+  </div><!-- /grid -->
+</div><!-- /container -->
 
 <script>
-(function() {
-  // --- Elements ---
-  const $ = (id) => document.getElementById(id);
+(function(){
+  const $ = id => document.getElementById(id);
   const canvas = $('priceChart');
   const ctx = canvas.getContext('2d');
 
-  // --- State ---
-  let priceHistory = [];
-  let predictions = [];
-  let currentPred = null;
-  let stats = null;
-  let feedReady = false;
-  let feedWarmup = 0;
-  let wsConnected = false;
+  let priceHistory = [], predictions = [], stats = null;
+  let currentPred = null, feedReady = false, feedWarmup = 0, bankroll = 1000;
 
-  // --- WebSocket ---
-  let ws = null;
-  let wsRetry = 0;
-
-  function connectWS() {
-    const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  // ── WebSocket ──
+  let ws, wsRetry = 0;
+  function connectWS(){
+    const proto = location.protocol==='https:'?'wss':'ws';
     ws = new WebSocket(`${proto}://${location.host}/ws`);
-
-    ws.onopen = () => {
-      wsConnected = true;
-      wsRetry = 0;
-      $('wsDot').className = 'status-dot green';
-      $('wsStatus').textContent = 'Connected';
-    };
-
-    ws.onclose = () => {
-      wsConnected = false;
-      $('wsDot').className = 'status-dot red';
-      $('wsStatus').textContent = 'Disconnected';
-      wsRetry++;
-      setTimeout(connectWS, Math.min(1000 * Math.pow(2, wsRetry), 10000));
-    };
-
-    ws.onerror = () => {};
-
-    ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        handleUpdate(data);
-      } catch(e) {}
-    };
+    ws.onopen = () => { wsRetry=0; $('wsDot').className='dot green'; $('wsStatus').textContent='Connected'; };
+    ws.onclose = () => { $('wsDot').className='dot red'; $('wsStatus').textContent='Disconnected'; wsRetry++; setTimeout(connectWS,Math.min(1000*2**wsRetry,12000)); };
+    ws.onerror = ()=>{};
+    ws.onmessage = e => { try{ handleUpdate(JSON.parse(e.data)); }catch(x){} };
   }
 
-  function handleUpdate(data) {
-    // Price history
-    if (data.price_history && data.price_history.length > 0) {
-      priceHistory = data.price_history;
-    }
+  function handleUpdate(d){
+    if(d.price_history?.length) priceHistory = d.price_history;
 
-    // Current price
-    if (data.current_price > 0) {
-      const p = data.current_price;
-      $('currentPrice').textContent = '$' + p.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-
-      // Price change from 1m ago
-      if (priceHistory.length > 60) {
-        const oldP = priceHistory[Math.max(0, priceHistory.length - 60)].p;
-        const diff = p - oldP;
-        const pct = ((diff / oldP) * 100).toFixed(3);
-        const sign = diff >= 0 ? '+' : '';
-        const cls = diff >= 0 ? 'green' : 'red';
-        $('currentPrice').className = `value ${cls}`;
-        $('priceChange').innerHTML = `<span style="color:var(--${cls})">${sign}$${diff.toFixed(2)} (${sign}${pct}%)</span>`;
+    if(d.current_price>0){
+      const p=d.current_price;
+      $('currentPrice').textContent='$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      if(priceHistory.length>30){
+        const old=priceHistory[Math.max(0,priceHistory.length-60)].p;
+        const diff=p-old, pct=((diff/old)*100).toFixed(3), sign=diff>=0?'+':'';
+        const cl=diff>=0?'var(--green)':'var(--red)';
+        $('currentPrice').style.color=cl;
+        $('priceChange').innerHTML=`<span style="color:${cl}">${sign}$${diff.toFixed(2)} (${sign}${pct}%)</span>`;
       }
     }
 
-    // Feed status
-    feedReady = data.feed_ready;
-    feedWarmup = data.feed_warmup || 0;
-    if (feedReady) {
-      $('feedDot').className = 'status-dot green';
-      $('feedStatus').textContent = 'Feed: live';
-      $('warmupFill').style.width = '100%';
+    feedReady=d.feed_ready; feedWarmup=d.feed_warmup||0;
+    if(feedReady){
+      $('feedDot').className='dot green'; $('feedStatus').textContent='Feed: live'; $('warmupFill').style.width='100%';
     } else {
-      $('feedDot').className = 'status-dot orange';
-      $('feedStatus').textContent = `Feed: ${feedWarmup}/300s`;
-      $('warmupFill').style.width = `${(feedWarmup / 300) * 100}%`;
+      $('feedDot').className='dot orange'; $('feedStatus').textContent=`Feed: ${feedWarmup}/300s`;
+      $('warmupFill').style.width=`${(feedWarmup/300)*100}%`;
     }
 
-    // Predictions
-    if (data.predictions && data.predictions.length > 0) {
-      predictions = data.predictions;
-      currentPred = predictions[0];
-      $('predCount').textContent = predictions.length;
-      updatePredCard(currentPred);
-      updateHistory(predictions);
-      updateFeatures(currentPred);
+    if(d.predictions?.length){
+      predictions=d.predictions; currentPred=predictions[0];
+      $('predCount').textContent=predictions.length;
+      renderPredCard(currentPred);
+      renderHistory(predictions);
+      renderIndicators(currentPred);
     }
 
-    // Active markets
-    if (data.active_markets) {
-      $('marketsStatus').textContent = `Markets: ${data.active_markets.length}`;
+    if(d.active_markets) $('marketsStatus').textContent=`Markets: ${d.active_markets.length}`;
+
+    if(d.bankroll!=null){
+      bankroll=d.bankroll;
+      $('bankrollVal').textContent='$'+bankroll.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      const pnl=d.total_pnl||0, pct=(pnl/1000*100).toFixed(2), sign=pnl>=0?'+':'';
+      const cl=pnl>=0?'var(--green)':'var(--red)';
+      $('bankrollPnl').innerHTML=pnl!==0?`<span style="color:${cl}">${sign}$${Math.abs(pnl).toFixed(2)} (${sign}${pct}%)</span>`:'';
+      $('bankrollVal').style.color=pnl>=0?'var(--green)':'var(--red)';
     }
 
-    // Stats
-    if (data.stats) {
-      stats = data.stats;
-      updateStats(stats);
-    }
-
-    // Draw chart
+    if(d.stats) renderStats(d.stats);
     drawChart();
   }
 
-  // --- Prediction card ---
-  function updatePredCard(pred) {
-    if (!pred) return;
-    const label = pred.label || 'WAITING';
-    $('predLabel').textContent = label;
-    $('predLabel').className = `pred-label ${label}`;
-    $('pHat').textContent = (pred.p_hat != null) ? pred.p_hat.toFixed(2) : '--';
-    $('pMarket').textContent = (pred.p_market != null) ? pred.p_market.toFixed(2) : '--';
-    $('predPrice').textContent = pred.btc_price ? '$' + pred.btc_price.toLocaleString('en-US', {maximumFractionDigits:0}) : '--';
-    $('predTime').textContent = pred.time_remaining_s ? pred.time_remaining_s + 's' : '--';
+  // ── Prediction card ──
+  function renderPredCard(p){
+    if(!p) return;
+    const label=p.label||'WAITING';
+    const conf=p.confidence!=null?p.confidence:(label==='UP'?p.p_hat:label==='DOWN'?(1-p.p_hat):0.5);
+    const confPct=(conf*100).toFixed(1);
 
-    // Edge bar
-    if (pred.p_hat != null && pred.p_market != null) {
-      const edge = pred.p_hat - pred.p_market;
-      const pct = ((edge + 0.5) / 1.0) * 100;
-      const fill = $('edgeBarFill');
-      if (edge >= 0) {
-        fill.style.left = '50%';
-        fill.style.width = `${Math.min(edge * 100, 50)}%`;
-        fill.style.background = 'var(--green)';
+    const wrap=$('predWrap');
+    wrap.className=`pred-label-wrap ${label}`;
+    $('predDir').className=`pred-dir ${label}`;
+    $('predDir').textContent= label==='UP'?'↑ UP':label==='DOWN'?'↓ DOWN':label;
+
+    if(label==='UP'||label==='DOWN'){
+      $('predConf').innerHTML=`Confidence: <span class="${label}">${confPct}%</span>`;
+    } else {
+      $('predConf').textContent='';
+    }
+
+    $('pHat').textContent=p.p_hat!=null?p.p_hat.toFixed(3):'--';
+    $('pMarket').textContent=p.p_market!=null?p.p_market.toFixed(3):'--';
+    $('predPrice').textContent=p.btc_price?'$'+p.btc_price.toLocaleString('en-US',{maximumFractionDigits:0}):'--';
+    $('predTime').textContent=p.time_remaining_s?p.time_remaining_s+'s':'--';
+
+    const bet=p.bet_size||0, kf=(p.kelly_fraction||0)*100;
+    $('betAmount').textContent='$'+bet.toFixed(2);
+    $('kellyPct').textContent=kf>0?`(Half-Kelly: ${kf.toFixed(1)}%)`:'(no bet)';
+
+    if(p.p_hat!=null&&p.p_market!=null){
+      const edge=p.p_hat-p.p_market;
+      const fill=$('edgeFill');
+      if(edge>=0){
+        fill.style.left='50%'; fill.style.width=`${Math.min(edge*100,50)}%`;
+        fill.style.background='var(--green)';
       } else {
-        const w = Math.min(Math.abs(edge) * 100, 50);
-        fill.style.left = `${50 - w}%`;
-        fill.style.width = `${w}%`;
-        fill.style.background = 'var(--red)';
+        const w=Math.min(Math.abs(edge)*100,50);
+        fill.style.left=`${50-w}%`; fill.style.width=`${w}%`;
+        fill.style.background='var(--red)';
       }
-    }
-
-    // Countdown (approximate from time_remaining_s)
-    if (pred.time_remaining_s) {
-      const m = Math.floor(pred.time_remaining_s / 60);
-      const s = pred.time_remaining_s % 60;
-      $('countdown').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    }
-
-    // RSI
-    if (pred.features && pred.features.rsi_14 != null) {
-      const rsi = pred.features.rsi_14;
-      $('rsiNeedle').style.left = `${Math.max(0, Math.min(100, rsi))}%`;
     }
   }
 
-  // --- Features ---
-  function updateFeatures(pred) {
-    if (!pred || !pred.features) return;
-    const f = pred.features;
-    const names = [
-      ['return_30s', 'Return 30s'], ['return_1m', 'Return 1m'],
-      ['return_3m', 'Return 3m'], ['return_5m', 'Return 5m'],
-      ['rsi_14', 'RSI(14)'], ['atr_5m', 'ATR 5m'],
-      ['trade_flow_imbalance', 'Flow Imbalance'], ['candle_body_ratio', 'Body Ratio'],
-      ['poly_mid', 'Poly Mid'], ['poly_spread', 'Poly Spread'],
-      ['binance_price', 'BTC Price'], ['time_remaining_s', 'Time Left (s)'],
-      ['distance_to_open', 'Dist to Open'], ['p_deviation', 'P Deviation'],
-      ['is_above_open', 'Above Open'],
-    ];
-    let html = '';
-    for (const [key, label] of names) {
-      const val = f[key];
-      if (val == null) continue;
-      const isPrice = key === 'binance_price';
-      const isPct = key.startsWith('return_') || key === 'distance_to_open' || key === 'trade_flow_imbalance' || key === 'atr_5m';
-      let display, cls = '';
-      if (isPrice) {
-        display = '$' + val.toLocaleString('en-US', {maximumFractionDigits:2});
-      } else if (isPct) {
-        display = (val * 100).toFixed(4) + '%';
-        cls = val > 0 ? 'pos' : val < 0 ? 'neg' : '';
-      } else {
-        display = typeof val === 'number' ? val.toFixed(4) : val;
-        if (typeof val === 'number') cls = val > 0.5 ? 'pos' : val < -0.01 ? 'neg' : '';
-      }
-      html += `<div class="feature-row"><span class="feature-name">${label}</span><span class="feature-val ${cls}">${display}</span></div>`;
-    }
-    $('featuresContent').innerHTML = html;
+  // ── Indicators ──
+  function renderIndicators(p){
+    if(!p?.features) return;
+    const f=p.features;
+    const rsi=f.rsi_14||50;
+    $('rsiNeedle').style.left=`${Math.max(0,Math.min(100,rsi))}%`;
+    $('rsiVal').textContent=rsi.toFixed(1);
 
-    // Mini features for indicator panel
-    const flowVal = f.trade_flow_imbalance || 0;
-    const flowColor = flowVal > 0.1 ? 'var(--green)' : flowVal < -0.1 ? 'var(--red)' : 'var(--text2)';
-    const flowPct = Math.min(Math.abs(flowVal) * 100, 50);
-    $('featuresMini').innerHTML = `
-      <div style="margin-bottom:8px;">
-        <div style="font-size:10px;color:var(--text2);text-transform:uppercase;margin-bottom:4px;">Trade Flow Imbalance</div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div style="flex:1;height:6px;background:var(--border);border-radius:3px;position:relative;">
-            <div style="position:absolute;left:50%;top:-1px;width:1px;height:8px;background:var(--text2);"></div>
-            <div style="position:absolute;${flowVal>=0?'left:50%':'right:50%'};height:100%;width:${flowPct}%;background:${flowColor};border-radius:3px;"></div>
-          </div>
-          <span style="font-size:12px;font-weight:600;color:${flowColor};width:50px;text-align:right;">${(flowVal*100).toFixed(1)}%</span>
-        </div>
+    const flow=f.trade_flow_imbalance||0;
+    const flowColor=flow>0.05?'var(--green)':flow<-0.05?'var(--red)':'var(--text2)';
+    const flowW=Math.min(Math.abs(flow)*100,50);
+    const ff=$('flowFill');
+    if(flow>=0){ ff.style.left='50%'; ff.style.width=`${flowW}%`; }
+    else { ff.style.left=`${50-flowW}%`; ff.style.width=`${flowW}%`; }
+    ff.style.background=flowColor;
+    $('flowVal').textContent=(flow*100).toFixed(1)+'%';
+    $('flowVal').style.color=flowColor;
+
+    const r30=f.return_30s||0, r1=f.return_1m||0;
+    const vr=f.vol_ratio||1;
+    $('ret30').textContent=(r30*100).toFixed(3)+'%';
+    $('ret30').style.color=r30>=0?'var(--green)':'var(--red)';
+    $('ret1m').textContent=(r1*100).toFixed(3)+'%';
+    $('ret1m').style.color=r1>=0?'var(--green)':'var(--red)';
+    $('volRatio').textContent=vr.toFixed(2)+'×';
+    $('volRatio').style.color=vr>1.5?'var(--orange)':vr<0.5?'var(--blue)':'var(--text2)';
+  }
+
+  // ── Stats ──
+  function renderStats(s){
+    if(!s?.resolved_list) return;
+    const res=s.resolved_list;
+    const dir=res.filter(r=>r.label==='UP'||r.label==='DOWN');
+    const correct=dir.filter(r=>(r.label==='UP'&&r.outcome===1.0)||(r.label==='DOWN'&&r.outcome===0.0));
+    const acc=dir.length>0?(correct.length/dir.length*100).toFixed(1):'N/A';
+
+    let brier=0; for(const r of res) if(r.outcome!=null) brier+=Math.pow((r.p_hat||0)-r.outcome,2);
+    const brierStr=res.length>0?(brier/res.length).toFixed(4):'N/A';
+
+    const totalPnl=res.reduce((s,r)=>s+(r.pnl||0),0);
+    const avgPnl=dir.length>0?totalPnl/dir.length:0;
+
+    function edgeAcc(thr){
+      const sub=dir.filter(r=>Math.abs((r.p_hat||0)-(r.p_market||0))>thr);
+      if(!sub.length) return 'N/A';
+      const c=sub.filter(r=>(r.label==='UP'&&r.outcome===1)||(r.label==='DOWN'&&r.outcome===0));
+      return `${(c.length/sub.length*100).toFixed(1)}% (${c.length}/${sub.length})`;
+    }
+
+    const pnlColor=totalPnl>=0?'var(--green)':'var(--red)';
+    const pnlSign=totalPnl>=0?'+':'';
+
+    $('statsContent').innerHTML=`
+      <div class="stat-grid" style="margin-bottom:12px;">
+        <div class="stat-box"><div class="sl">Resolved</div><div class="sv">${res.length}</div></div>
+        <div class="stat-box"><div class="sl">Accuracy</div><div class="sv" style="color:var(--green)">${acc}%</div></div>
+        <div class="stat-box"><div class="sl">Total P&L</div><div class="sv" style="color:${pnlColor}">${pnlSign}$${Math.abs(totalPnl).toFixed(2)}</div></div>
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <div style="flex:1;padding:8px;background:var(--surface2);border-radius:6px;text-align:center;">
-          <div style="font-size:10px;color:var(--text2);">30s Return</div>
-          <div style="font-size:14px;font-weight:700;color:${(f.return_30s||0)>=0?'var(--green)':'var(--red)'};">${((f.return_30s||0)*100).toFixed(3)}%</div>
-        </div>
-        <div style="flex:1;padding:8px;background:var(--surface2);border-radius:6px;text-align:center;">
-          <div style="font-size:10px;color:var(--text2);">1m Return</div>
-          <div style="font-size:14px;font-weight:700;color:${(f.return_1m||0)>=0?'var(--green)':'var(--red)'};">${((f.return_1m||0)*100).toFixed(3)}%</div>
-        </div>
-      </div>
+      <div class="stat-row"><span class="sr-label">Directional bets</span><span class="sr-val">${dir.length} (${s.skipped||0} skipped)</span></div>
+      <div class="stat-row"><span class="sr-label">Brier Score</span><span class="sr-val">${brierStr}</span></div>
+      <div class="stat-row"><span class="sr-label">Avg P&L / bet</span><span class="sr-val" style="color:${avgPnl>=0?'var(--green)':'var(--red)'}">${avgPnl>=0?'+':''}$${Math.abs(avgPnl).toFixed(2)}</span></div>
+      <div class="stat-row"><span class="sr-label">Acc |edge|>5%</span><span class="sr-val">${edgeAcc(0.05)}</span></div>
+      <div class="stat-row"><span class="sr-label">Acc |edge|>10%</span><span class="sr-val">${edgeAcc(0.10)}</span></div>
+      <div class="stat-row"><span class="sr-label">Acc |edge|>20%</span><span class="sr-val">${edgeAcc(0.20)}</span></div>
     `;
   }
 
-  // --- Stats ---
-  function updateStats(s) {
-    if (!s || !s.resolved_list) return;
-    const resolved = s.resolved_list;
-    const dir = resolved.filter(r => r.label === 'UP' || r.label === 'DOWN');
-    const correct = dir.filter(r => (r.label === 'UP' && r.outcome === 1.0) || (r.label === 'DOWN' && r.outcome === 0.0));
-    const acc = dir.length > 0 ? (correct.length / dir.length * 100).toFixed(1) : 'N/A';
+  // ── History table ──
+  function renderHistory(preds){
+    let html='';
+    for(const p of preds.slice(0,60)){
+      const time=p.predicted_at?new Date(p.predicted_at).toLocaleTimeString():'--';
+      const edge=p.p_hat!=null&&p.p_market!=null?p.p_hat-p.p_market:null;
+      const edgeStr=edge!=null?`${edge>=0?'+':''}${edge.toFixed(3)}`:'--';
+      const edgeColor=edge>0?'var(--green)':edge<0?'var(--red)':'var(--text2)';
+      const conf=p.confidence??( p.label==='UP'?p.p_hat:p.label==='DOWN'?(1-p.p_hat):0.5 );
+      const confStr=conf!=null?`${(conf*100).toFixed(1)}%`:'--';
+      const confColor=conf>0.65?'var(--green)':conf<0.45?'var(--red)':'var(--text2)';
+      const bet=p.bet_size||0;
+      const betStr=bet>0?'$'+bet.toFixed(2):'—';
 
-    let brier = 0;
-    for (const r of resolved) { brier += Math.pow(r.p_hat - r.outcome, 2); }
-    brier = resolved.length > 0 ? (brier / resolved.length).toFixed(4) : 'N/A';
-
-    // Edge stratified
-    function edgeAcc(threshold) {
-      const subset = dir.filter(r => Math.abs(r.p_hat - r.p_market) > threshold);
-      if (subset.length === 0) return 'N/A';
-      const c = subset.filter(r => (r.label === 'UP' && r.outcome === 1.0) || (r.label === 'DOWN' && r.outcome === 0.0));
-      return `${(c.length / subset.length * 100).toFixed(1)}% (${c.length}/${subset.length})`;
-    }
-
-    $('statsContent').innerHTML = `
-      <div class="stat-row"><span class="stat-label">Total Resolved</span><span class="stat-val">${resolved.length}</span></div>
-      <div class="stat-row"><span class="stat-label">Directional (UP/DN)</span><span class="stat-val">${dir.length}</span></div>
-      <div class="stat-row"><span class="stat-label">Accuracy</span><span class="stat-val" style="color:var(--green)">${acc}%</span></div>
-      <div class="stat-row"><span class="stat-label">Brier Score</span><span class="stat-val">${brier}</span></div>
-      <div class="stat-row"><span class="stat-label">Acc |edge| > 0.10</span><span class="stat-val">${edgeAcc(0.10)}</span></div>
-      <div class="stat-row"><span class="stat-label">Acc |edge| > 0.20</span><span class="stat-val">${edgeAcc(0.20)}</span></div>
-    `;
-  }
-
-  // --- History table ---
-  function updateHistory(preds) {
-    let html = '';
-    for (const p of preds.slice(0, 50)) {
-      const time = p.predicted_at ? new Date(p.predicted_at).toLocaleTimeString() : '--';
-      const mid = p.market_id ? p.market_id.substring(0, 10) + '...' : '--';
-      const edge = (p.p_hat != null && p.p_market != null) ? (p.p_hat - p.p_market) : null;
-      const edgeStr = edge != null ? `${edge >= 0 ? '+' : ''}${edge.toFixed(2)}` : '--';
-      const edgeColor = edge > 0 ? 'var(--green)' : edge < 0 ? 'var(--red)' : 'var(--text2)';
-      const priceStr = p.btc_price ? '$' + p.btc_price.toLocaleString('en-US', {maximumFractionDigits:0}) : '--';
-
-      let outcomeStr;
-      if (p.resolved) {
-        const correct = (p.label === 'UP' && p.outcome === 1.0) || (p.label === 'DOWN' && p.outcome === 0.0);
-        outcomeStr = correct
-          ? '<span class="outcome-icon correct">&#10003;</span>'
-          : '<span class="outcome-icon wrong">&#10007;</span>';
-      } else {
-        outcomeStr = '<span class="outcome-icon pending">&#9679;</span>';
+      let pnlStr='<span class="oi pend">●</span>';
+      if(p.resolved && p.pnl!=null){
+        const pnl=p.pnl;
+        pnlStr=`<span style="color:${pnl>=0?'var(--green)':'var(--red)';font-weight:700}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</span>`;
+      } else if(p.resolved){
+        pnlStr='<span style="color:var(--text2)">$0</span>';
       }
 
-      html += `<tr>
+      let resultStr='<span class="oi pend">●</span>';
+      if(p.resolved){
+        const ok=(p.label==='UP'&&p.outcome===1.0)||(p.label==='DOWN'&&p.outcome===0.0);
+        resultStr=ok?'<span class="oi ok">✓</span>':'<span class="oi bad">✗</span>';
+        if(p.label==='SKIP') resultStr='<span class="oi pend">—</span>';
+      }
+
+      html+=`<tr>
         <td>${time}</td>
-        <td style="font-family:monospace;font-size:11px;">${mid}</td>
         <td><span class="badge ${p.label}">${p.label}</span></td>
-        <td>${p.p_hat != null ? p.p_hat.toFixed(2) : '--'}</td>
-        <td>${p.p_market != null ? p.p_market.toFixed(2) : '--'}</td>
+        <td style="color:${confColor};font-weight:700">${confStr}</td>
+        <td>${p.p_hat!=null?p.p_hat.toFixed(3):'--'}</td>
+        <td>${p.p_market!=null?p.p_market.toFixed(3):'--'}</td>
         <td style="color:${edgeColor}">${edgeStr}</td>
-        <td>${priceStr}</td>
-        <td>${outcomeStr}</td>
+        <td>${p.btc_price?'$'+p.btc_price.toLocaleString('en-US',{maximumFractionDigits:0}):'--'}</td>
+        <td style="color:var(--blue)">${betStr}</td>
+        <td>${pnlStr}</td>
+        <td>${resultStr}</td>
       </tr>`;
     }
-    $('historyBody').innerHTML = html || '<tr><td colspan="8" style="text-align:center;color:var(--text2);">No predictions yet</td></tr>';
+    $('histBody').innerHTML=html||'<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:20px;">No predictions yet</td></tr>';
   }
 
-  // --- Chart drawing ---
-  function drawChart() {
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    canvas.width = rect.width * dpr;
-    canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
-    const W = rect.width;
-    const H = rect.height;
+  // ── Chart ──
+  function drawChart(){
+    const dpr=window.devicePixelRatio||1;
+    const rect=canvas.getBoundingClientRect();
+    canvas.width=rect.width*dpr; canvas.height=rect.height*dpr;
+    ctx.scale(dpr,dpr);
+    const W=rect.width, H=rect.height;
+    ctx.clearRect(0,0,W,H);
 
-    ctx.clearRect(0, 0, W, H);
-
-    if (priceHistory.length < 2) {
-      ctx.fillStyle = '#8b949e';
-      ctx.font = '14px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(feedReady ? 'Waiting for price data...' : `Warming up... (${feedWarmup}/300s)`, W/2, H/2);
+    if(priceHistory.length<2){
+      ctx.fillStyle='#7a8fa6'; ctx.font='14px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(feedReady?'Waiting for price data…':`Warming up… (${feedWarmup}/300s)`,W/2,H/2);
       return;
     }
 
-    const prices = priceHistory.map(p => p.p);
-    const times = priceHistory.map(p => p.t);
-    const minP = Math.min(...prices);
-    const maxP = Math.max(...prices);
-    const range = maxP - minP || 1;
-    const padY = range * 0.1;
+    const prices=priceHistory.map(p=>p.p);
+    const times=priceHistory.map(p=>p.t);
+    const minP=Math.min(...prices), maxP=Math.max(...prices);
+    const range=maxP-minP||1, padY=range*0.12;
+    const mg={top:20,right:72,bottom:28,left:8};
+    const cW=W-mg.left-mg.right, cH=H-mg.top-mg.bottom;
 
-    const margin = { top: 20, right: 70, bottom: 30, left: 10 };
-    const cW = W - margin.left - margin.right;
-    const cH = H - margin.top - margin.bottom;
+    function xp(i){return mg.left+(i/(prices.length-1))*cW;}
+    function yp(v){return mg.top+cH-((v-(minP-padY))/(range+2*padY))*cH;}
 
-    function xPos(i) { return margin.left + (i / (prices.length - 1)) * cW; }
-    function yPos(p) { return margin.top + cH - ((p - (minP - padY)) / (range + 2 * padY)) * cH; }
-
-    // Grid lines
-    ctx.strokeStyle = '#21262d';
-    ctx.lineWidth = 1;
-    const gridLines = 5;
-    for (let i = 0; i <= gridLines; i++) {
-      const p = minP - padY + (range + 2 * padY) * (i / gridLines);
-      const y = yPos(p);
-      ctx.beginPath();
-      ctx.moveTo(margin.left, y);
-      ctx.lineTo(W - margin.right, y);
-      ctx.stroke();
-
-      // Price label
-      ctx.fillStyle = '#8b949e';
-      ctx.font = '11px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('$' + p.toFixed(0), W - margin.right + 5, y + 4);
+    // Grid
+    ctx.strokeStyle='#1e2d42'; ctx.lineWidth=1;
+    for(let i=0;i<=5;i++){
+      const v=minP-padY+(range+2*padY)*(i/5);
+      ctx.beginPath(); ctx.moveTo(mg.left,yp(v)); ctx.lineTo(W-mg.right,yp(v)); ctx.stroke();
+      ctx.fillStyle='#7a8fa6'; ctx.font='10px sans-serif'; ctx.textAlign='left';
+      ctx.fillText('$'+v.toFixed(0),W-mg.right+4,yp(v)+4);
     }
 
     // Time labels
-    ctx.fillStyle = '#8b949e';
-    ctx.font = '11px sans-serif';
-    ctx.textAlign = 'center';
-    const tMin = times[0];
-    const tMax = times[times.length - 1];
-    const tRange = tMax - tMin;
-    for (let i = 0; i <= 5; i++) {
-      const t = tMin + (tRange * i / 5);
-      const x = margin.left + (i / 5) * cW;
-      const d = new Date(t * 1000);
-      ctx.fillText(d.toLocaleTimeString(), x, H - 5);
+    ctx.fillStyle='#7a8fa6'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+    const tMin=times[0], tMax=times[times.length-1], tR=tMax-tMin;
+    for(let i=0;i<=4;i++){
+      const x=mg.left+(i/4)*cW;
+      ctx.fillText(new Date((tMin+tR*i/4)*1000).toLocaleTimeString(),x,H-6);
     }
 
-    // Price line with gradient fill
+    // Line
     ctx.beginPath();
-    for (let i = 0; i < prices.length; i++) {
-      const x = xPos(i);
-      const y = yPos(prices[i]);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = '#f0883e';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    prices.forEach((v,i)=>i===0?ctx.moveTo(xp(i),yp(v)):ctx.lineTo(xp(i),yp(v)));
+    ctx.strokeStyle='#f0883e'; ctx.lineWidth=2; ctx.stroke();
 
-    // Gradient fill below line
-    ctx.lineTo(xPos(prices.length - 1), margin.top + cH);
-    ctx.lineTo(xPos(0), margin.top + cH);
-    ctx.closePath();
-    const grad = ctx.createLinearGradient(0, margin.top, 0, margin.top + cH);
-    grad.addColorStop(0, 'rgba(240, 136, 62, 0.3)');
-    grad.addColorStop(1, 'rgba(240, 136, 62, 0.0)');
-    ctx.fillStyle = grad;
-    ctx.fill();
+    // Fill
+    ctx.lineTo(xp(prices.length-1),mg.top+cH); ctx.lineTo(xp(0),mg.top+cH); ctx.closePath();
+    const g=ctx.createLinearGradient(0,mg.top,0,mg.top+cH);
+    g.addColorStop(0,'rgba(240,136,62,.3)'); g.addColorStop(1,'rgba(240,136,62,0)');
+    ctx.fillStyle=g; ctx.fill();
 
-    // Current price dot
-    const lastX = xPos(prices.length - 1);
-    const lastY = yPos(prices[prices.length - 1]);
-    ctx.beginPath();
-    ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
-    ctx.fillStyle = '#f0883e';
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(lastX, lastY, 8, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(240, 136, 62, 0.4)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Current price label
-    ctx.fillStyle = '#f0883e';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'right';
-    ctx.fillText('$' + prices[prices.length-1].toFixed(2), lastX - 10, lastY - 10);
+    // Last dot
+    const lx=xp(prices.length-1), ly=yp(prices[prices.length-1]);
+    ctx.beginPath(); ctx.arc(lx,ly,5,0,Math.PI*2); ctx.fillStyle='#f0883e'; ctx.fill();
+    ctx.beginPath(); ctx.arc(lx,ly,9,0,Math.PI*2);
+    ctx.strokeStyle='rgba(240,136,62,.35)'; ctx.lineWidth=2; ctx.stroke();
+    ctx.fillStyle='#f0883e'; ctx.font='bold 11px sans-serif'; ctx.textAlign='right';
+    ctx.fillText('$'+prices[prices.length-1].toFixed(2),lx-12,ly-10);
 
     // Prediction markers
-    if (predictions.length > 0) {
-      for (const pred of predictions) {
-        if (!pred.predicted_at || !pred.btc_price) continue;
-        const pt = new Date(pred.predicted_at).getTime() / 1000;
-        if (pt < tMin || pt > tMax) continue;
-        const pi = Math.round(((pt - tMin) / tRange) * (prices.length - 1));
-        if (pi < 0 || pi >= prices.length) continue;
-        const px = xPos(pi);
-        const py = yPos(pred.btc_price);
-
-        // Triangle marker
-        const color = pred.label === 'UP' ? '#3fb950' : pred.label === 'DOWN' ? '#f85149' : '#8b949e';
-        const dir = pred.label === 'DOWN' ? 1 : -1;
-        ctx.beginPath();
-        ctx.moveTo(px, py + dir * 12);
-        ctx.lineTo(px - 6, py + dir * 22);
-        ctx.lineTo(px + 6, py + dir * 22);
-        ctx.closePath();
-        ctx.fillStyle = color;
-        ctx.fill();
-      }
+    for(const pred of predictions){
+      if(!pred.predicted_at||!pred.btc_price) continue;
+      const pt=new Date(pred.predicted_at).getTime()/1000;
+      if(pt<tMin||pt>tMax) continue;
+      const pi=Math.round(((pt-tMin)/tR)*(prices.length-1));
+      if(pi<0||pi>=prices.length) continue;
+      const px=xp(pi), py=yp(pred.btc_price);
+      const color=pred.label==='UP'?'#22d3a0':pred.label==='DOWN'?'#f4566e':'#7a8fa6';
+      const dir2=pred.label==='DOWN'?1:-1;
+      ctx.beginPath(); ctx.moveTo(px,py+dir2*10); ctx.lineTo(px-5,py+dir2*19); ctx.lineTo(px+5,py+dir2*19);
+      ctx.closePath(); ctx.fillStyle=color; ctx.fill();
     }
   }
 
-  // --- Init ---
   connectWS();
-  window.addEventListener('resize', drawChart);
+  window.addEventListener('resize',drawChart);
   drawChart();
 })();
 </script>

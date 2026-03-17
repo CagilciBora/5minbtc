@@ -144,18 +144,43 @@ def _extract_market_fields(market: dict) -> Optional[dict]:
 async def fetch_active_btc_markets(session: aiohttp.ClientSession) -> list[dict]:
     """Fetch and filter active Polymarket BTC 5-minute markets.
 
-    Uses the Gamma API for market discovery (public, no auth, supports text search).
-    Falls back to the CLOB API if Gamma fails.
+    Strategy:
+      1. Gamma API with text search "bitcoin up or down" (targets the market name directly)
+      2. Gamma API broad fetch (top 200 active markets, filtered locally)
+      3. CLOB API fallback
     """
     results = []
 
-    # --- Try Gamma API first (more reliable for market discovery) ---
+    # --- 1. Gamma API: targeted text search ---
+    gamma_search = await _fetch_with_retry(
+        session,
+        config.GAMMA_MARKETS_URL,
+        params={
+            "closed": "false",
+            "active": "true",
+            "limit": "50",
+            "q": "bitcoin up or down",
+        },
+    )
+    if gamma_search is not None:
+        markets_raw = gamma_search if isinstance(gamma_search, list) else gamma_search.get("data", [])
+        if isinstance(markets_raw, list):
+            for m in markets_raw:
+                parsed = _extract_market_fields(m)
+                if parsed:
+                    results.append(parsed)
+            log.debug("Gamma search: found %d BTC 5-min markets", len(results))
+            if results:
+                return results
+
+    # --- 2. Gamma API: broad fetch (more markets, filter locally) ---
     gamma_data = await _fetch_with_retry(
         session,
         config.GAMMA_MARKETS_URL,
         params={
             "closed": "false",
-            "limit": "100",
+            "active": "true",
+            "limit": "200",
         },
     )
     if gamma_data is not None:
@@ -165,11 +190,11 @@ async def fetch_active_btc_markets(session: aiohttp.ClientSession) -> list[dict]
                 parsed = _extract_market_fields(m)
                 if parsed:
                     results.append(parsed)
-            log.debug("Gamma API: found %d BTC 5-min markets", len(results))
+            log.debug("Gamma broad: found %d BTC 5-min markets", len(results))
             if results:
                 return results
 
-    # --- Fallback: CLOB API ---
+    # --- 3. Fallback: CLOB API ---
     clob_data = await _fetch_with_retry(session, config.CLOB_MARKETS_URL)
     if clob_data is not None:
         markets_raw = clob_data if isinstance(clob_data, list) else clob_data.get("data", clob_data.get("markets", []))

@@ -17,20 +17,21 @@ log = get_logger("web")
 
 # Shared state that tasks can publish into
 _state = {
-    "price_history": [],       # list of {t, price} dicts (last 300s)
+    "price_history": [],       # list of {t, price}
     "current_price": 0.0,
-    "predictions": [],         # recent predictions from watcher
-    "stats": None,             # latest stats dict
+    "predictions": [],         # recent predictions (newest first)
+    "stats": None,
     "feed_ready": False,
     "feed_warmup": 0,
-    "active_markets": [],      # currently tracked markets
+    "active_markets": [],
+    "bankroll": config.INITIAL_BANKROLL,
+    "total_pnl": 0.0,
 }
 _state_lock = asyncio.Lock()
 _ws_clients: set[web.WebSocketResponse] = set()
 
 
 async def publish_state_update():
-    """Push current state to all connected WebSocket clients."""
     async with _state_lock:
         payload = json.dumps(_state, default=str)
     dead = set()
@@ -43,50 +44,54 @@ async def publish_state_update():
 
 
 async def update_price(price: float, timestamp: float):
-    """Called by binance feed bridge to push a price point."""
     async with _state_lock:
         _state["current_price"] = price
         _state["price_history"].append({"t": timestamp, "p": price})
-        # Keep last 300 seconds
         cutoff = time.time() - config.BINANCE_BUFFER_SECONDS
         while _state["price_history"] and _state["price_history"][0]["t"] < cutoff:
             _state["price_history"].pop(0)
 
 
 async def update_feed_status(ready: bool, warmup: int):
-    """Called by watcher bridge to update feed status."""
     async with _state_lock:
         _state["feed_ready"] = ready
         _state["feed_warmup"] = warmup
 
 
 async def update_prediction(prediction: dict):
-    """Called when a new prediction is made."""
     async with _state_lock:
         _state["predictions"].insert(0, prediction)
-        # Keep last 100
         _state["predictions"] = _state["predictions"][:100]
+        # Update bankroll from latest prediction context
+        if prediction.get("bankroll") is not None:
+            _state["bankroll"] = prediction["bankroll"]
 
 
-async def update_resolution(market_id: str, outcome: float, correct: bool | None):
-    """Called when a market resolves."""
+async def update_resolution(
+    market_id: str,
+    outcome: float,
+    correct: bool | None,
+    pnl: float,
+    bankroll: float,
+):
     async with _state_lock:
         for pred in _state["predictions"]:
             if pred.get("market_id") == market_id:
                 pred["outcome"] = outcome
                 pred["correct"] = correct
+                pred["pnl"] = pnl
                 pred["resolved"] = True
                 break
+        _state["bankroll"] = bankroll
+        _state["total_pnl"] = bankroll - config.INITIAL_BANKROLL
 
 
 async def update_stats(stats: dict):
-    """Called by stats task to push latest stats."""
     async with _state_lock:
         _state["stats"] = stats
 
 
 async def update_active_markets(markets: list):
-    """Called by watcher to show currently tracked markets."""
     async with _state_lock:
         _state["active_markets"] = markets
 
@@ -94,16 +99,19 @@ async def update_active_markets(markets: list):
 # --- WebSocket push loop ---
 
 async def run_ws_push(feed: BinanceFeed, db: Database):
-    """Push state to all WebSocket clients every second."""
     while True:
         try:
-            # Update price from feed
             snap = await feed.snapshot()
             if snap["last_price"] > 0:
                 await update_price(snap["last_price"], time.time())
             await update_feed_status(feed.is_ready(), feed.warmup_elapsed())
 
-            # Refresh predictions from DB
+            # Sync bankroll from DB
+            bankroll = await db.get_bankroll()
+            async with _state_lock:
+                _state["bankroll"] = bankroll
+                _state["total_pnl"] = bankroll - config.INITIAL_BANKROLL
+
             resolved = await db.get_resolved()
             if resolved:
                 await update_stats({
@@ -136,7 +144,7 @@ async def handle_ws(request: web.Request) -> web.WebSocketResponse:
     log.info("WebSocket client connected (%d total)", len(_ws_clients))
     try:
         async for msg in ws:
-            pass  # We only push, don't read
+            pass
     finally:
         _ws_clients.discard(ws)
         log.info("WebSocket client disconnected (%d remaining)", len(_ws_clients))
@@ -144,7 +152,6 @@ async def handle_ws(request: web.Request) -> web.WebSocketResponse:
 
 
 async def handle_api_predictions(request: web.Request) -> web.Response:
-    """REST endpoint to get all predictions from DB."""
     db: Database = request.app["db"]
     resolved = await db.get_resolved()
     return web.json_response(resolved)
@@ -161,15 +168,12 @@ def create_app(feed: BinanceFeed, db: Database) -> web.Application:
 
 
 async def run_server(feed: BinanceFeed, db: Database, host: str = "0.0.0.0", port: int = 8080):
-    """Start the web server and WS push loop."""
     app = create_app(feed, db)
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, host, port)
     await site.start()
     log.info("Dashboard running at http://%s:%d", host, port)
-
-    # Run WS push loop
     try:
         await run_ws_push(feed, db)
     finally:
