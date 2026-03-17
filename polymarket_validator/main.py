@@ -4,6 +4,7 @@ import asyncio
 import os
 import signal
 import sys
+import webbrowser
 
 import aiohttp
 
@@ -60,6 +61,12 @@ async def main():
         run_server(feed, db, port=WEB_PORT), name="web_server"
     )
     tasks.append(web_task)
+
+    # Auto-open browser after a short delay to let the server start
+    url = f"http://localhost:{WEB_PORT}"
+    log.info("Opening dashboard at %s", url)
+    await asyncio.sleep(0.5)
+    webbrowser.open(url)
 
     # --- Graceful shutdown ---
     shutdown_event = asyncio.Event()
