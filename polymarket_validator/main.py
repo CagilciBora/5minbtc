@@ -11,9 +11,12 @@ from polymarket_validator.storage.db import Database
 from polymarket_validator.tasks.resolver import run_resolver
 from polymarket_validator.tasks.stats import run_stats
 from polymarket_validator.tasks.watcher import run_watcher
+from polymarket_validator.web.server import run_server
 from polymarket_validator.utils.logger import get_logger, setup_logging
 
 log = get_logger("main")
+
+WEB_PORT = 8080
 
 
 async def main():
@@ -46,6 +49,12 @@ async def main():
 
     stats_task = asyncio.create_task(run_stats(db), name="stats")
     tasks.append(stats_task)
+
+    # Web dashboard
+    web_task = asyncio.create_task(
+        run_server(feed, db, port=WEB_PORT), name="web_server"
+    )
+    tasks.append(web_task)
 
     # Graceful shutdown
     shutdown_event = asyncio.Event()

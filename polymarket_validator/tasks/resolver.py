@@ -9,6 +9,7 @@ from polymarket_validator import config
 from polymarket_validator.feeds.polymarket_api import get_resolved_price
 from polymarket_validator.storage.db import Database
 from polymarket_validator.utils.logger import get_logger
+from polymarket_validator.web import server as web_state
 
 log = get_logger("resolver")
 
@@ -48,6 +49,11 @@ async def run_resolver(db: Database, session: aiohttp.ClientSession):
                     label,
                     mark,
                     p_hat,
+                )
+
+                # Push to web dashboard
+                await web_state.update_resolution(
+                    pred["market_id"], resolved_price, correct
                 )
 
         except asyncio.CancelledError:
